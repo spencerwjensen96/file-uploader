@@ -46,6 +46,9 @@ const cloudProviders = [
 export default function Settings() {
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [storageUrl, setStorageUrl] = useState('');
+  const [region, setRegion] = useState('');
+  const [accessKey, setAccessKey] = useState('');
+  const [secretKey, setSecretKey] = useState('');
   const [originalSettings, setOriginalSettings] = useState<Settings>(
     {} as Settings,
   );
@@ -61,6 +64,15 @@ export default function Settings() {
       setSelectedProvider(settings.activeCloudProvider || '');
       setStorageUrl(settings.storageUrl || '');
       setOriginalSettings(settings);
+      switch (settings.activeCloudProvider) {
+        case 'cloudflare':
+          setRegion(settings.cloudflare.region);
+          setAccessKey(settings.cloudflare.accessKey);
+          setSecretKey(settings.cloudflare.secretKey);
+          break;
+        default:
+          break;
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
       toast({
@@ -80,6 +92,11 @@ export default function Settings() {
       ...originalSettings,
       activeCloudProvider: selectedProvider,
       storageUrl,
+      [selectedProvider]: {
+        region,
+        accessKey,
+        secretKey,
+      },
     };
     try {
       await window.electron.saveSettings(settings);
@@ -137,6 +154,36 @@ export default function Settings() {
               value={storageUrl}
               onChange={(e) => setStorageUrl(e.target.value)}
               placeholder="Storage URL"
+              className={cn('p-2')}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="region">Region</Label>
+            <Input
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              placeholder="Region"
+              className={cn('p-2')}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="accessKey">Access Key</Label>
+            <Input
+              id="accessKey"
+              value={accessKey}
+              onChange={(e) => setAccessKey(e.target.value)}
+              placeholder="Access Key"
+              className={cn('p-2')}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="secretKey">Secret Key</Label>
+            <Input
+              id="secretKey"
+              value={secretKey}
+              onChange={(e) => setSecretKey(e.target.value)}
+              placeholder="Secret Key"
               className={cn('p-2')}
             />
           </div>

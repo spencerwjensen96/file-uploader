@@ -1,22 +1,30 @@
 /* eslint import/prefer-default-export: off */
 import { URL } from 'url';
 import path from 'path';
+import * as fs from 'fs';
 import {
   S3Client,
   PutObjectCommand,
   PutObjectCommandInput,
   ServerSideEncryption,
 } from '@aws-sdk/client-s3';
+import { app } from 'electron';
+
+const CONFIG_FILE_PATH = path.join(app.getPath('userData'), 'config.json');
+
+async function getSecrets() {
+  const data = await fs.promises.readFile(CONFIG_FILE_PATH, 'utf-8');
+  return JSON.parse(data);
+}
+
+const secrets = await getSecrets();
 
 const client = new S3Client({
-  //enter creds here
-  region: '',
-  endpoint:
-    '',
+  region: secrets[secrets.activeCloudProvider].region,
+  endpoint: secrets.storageUrl,
   credentials: {
-    accessKeyId: '',
-    secretAccessKey:
-      '',
+    accessKeyId: secrets[secrets.activeCloudProvider].accessKey,
+    secretAccessKey: secrets[secrets.activeCloudProvider].secretKey,
   },
 });
 

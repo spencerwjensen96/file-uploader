@@ -16,7 +16,6 @@ import * as fs from 'fs';
 
 import MenuBuilder from './menu';
 import { resolveHtmlPath, uploadToCloudflare } from './util';
-import { act } from 'react';
 
 class AppUpdater {
   constructor() {
@@ -181,9 +180,6 @@ ipcMain.handle('load-settings', async () => {
 ipcMain.handle(
   'upload-file',
   async (event, file: string, activeCloudProvider: string) => {
-    console.log('HERE');
-    console.log(event);
-    console.log(file, activeCloudProvider);
     const data = await fs.promises.readFile(CONFIG_FILE_PATH, 'utf-8');
     const jsonData = JSON.parse(data);
     let result: string = '';
