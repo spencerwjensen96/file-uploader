@@ -3,15 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 import cloudflareLogoSrc from '../assets/logos/cloudflare.svg';
-// import awsLogoSrc from '../assets/logos/aws.svg';
-// import azureLogoSrc from '../assets/logos/azure.svg';
-
-// import '../renderer/App.css';
+import awsLogoSrc from '../assets/logos/aws.svg';
+import azureLogoSrc from '../assets/logos/azure.svg';
 
 // Declare the global electron interface
 declare global {
@@ -23,7 +22,7 @@ declare global {
   }
 }
 
-interface Settings {
+interface ISettings {
   cloudProviders: string[];
   storageUrl: string;
   [key: string]: any;
@@ -35,44 +34,41 @@ const cloudProviders = [
     label: 'Cloudflare',
     logo: cloudflareLogoSrc,
   },
-  // {
-  //   value: 'aws',
-  //   label: 'Amazon Web Services (AWS)',
-  //   logo: awsLogoSrc,
-  // },
-  // { value: 'azure', label: 'Microsoft Azure', logo: azureLogoSrc },
+  {
+    value: 'aws',
+    label: 'Amazon Web Services (AWS)',
+    logo: awsLogoSrc,
+  },
+  { value: 'azure', label: 'Microsoft Azure', logo: azureLogoSrc },
 ];
 
 export default function Settings() {
+  const [originalSettings, setOriginalSettings] = useState<ISettings>(
+    {} as ISettings,
+  );
+  const [activeProvider, setActiveProvider] = useState<string>('');
+  const [isActiveProvider, setIsActiveProvider] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [storageUrl, setStorageUrl] = useState('');
   const [region, setRegion] = useState('');
   const [accessKey, setAccessKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
-  const [originalSettings, setOriginalSettings] = useState<Settings>(
-    {} as Settings,
-  );
+
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettingsPage = async () => {
     try {
       const settings = await window.electron.loadSettings();
-      setSelectedProvider(settings.activeCloudProvider || '');
-      setStorageUrl(settings.storageUrl || '');
+      setActiveProvider(settings.activeCloudProvider || '');
+      setSelectedProvider(
+        settings.activeCloudProvider || cloudProviders[0].value,
+      );
       setOriginalSettings(settings);
-      switch (settings.activeCloudProvider) {
-        case 'cloudflare':
-          setRegion(settings.cloudflare.region);
-          setAccessKey(settings.cloudflare.accessKey);
-          setSecretKey(settings.cloudflare.secretKey);
-          break;
-        default:
-          break;
-      }
+
+      setStorageUrl(settings[settings.activeCloudProvider].storageUrl || '');
+      setRegion(settings[settings.activeCloudProvider].region || '');
+      setAccessKey(settings[settings.activeCloudProvider].accessKey || '');
+      setSecretKey(settings[settings.activeCloudProvider].secretKey || '');
     } catch (error) {
       console.error('Failed to load settings:', error);
       toast({
@@ -83,16 +79,38 @@ export default function Settings() {
     }
   };
 
+  useEffect(() => {
+    loadSettingsPage();
+  }, []);
+
+  useEffect(() => {
+    setIsActiveProvider(
+      originalSettings.activeCloudProvider === selectedProvider,
+    );
+  }, [selectedProvider]);
+
   const handleProviderToggle = (value: string) => {
+    setIsActiveProvider(activeProvider === value);
     setSelectedProvider(value);
+    if (!originalSettings[value]) {
+      setStorageUrl('');
+      setRegion('');
+      setAccessKey('');
+      setSecretKey('');
+      return;
+    }
+    setStorageUrl(originalSettings[value].storageUrl || '');
+    setRegion(originalSettings[value].region || '');
+    setAccessKey(originalSettings[value].accessKey || '');
+    setSecretKey(originalSettings[value].secretKey || '');
   };
 
   const handleSave = async () => {
     const settings = {
       ...originalSettings,
-      activeCloudProvider: selectedProvider,
-      storageUrl,
+      activeCloudProvider: activeProvider,
       [selectedProvider]: {
+        storageUrl,
         region,
         accessKey,
         secretKey,
@@ -146,6 +164,17 @@ export default function Settings() {
                 .filter((selected) => selected.value === selectedProvider)
                 .map((selected) => selected.label)}
             </Label>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isActiveProvider"
+                checked={isActiveProvider}
+                onCheckedChange={(checked) => {
+                  setIsActiveProvider(checked as boolean);
+                  setActiveProvider(selectedProvider);
+                }}
+              />
+              <Label htmlFor="isActiveProvider">Active</Label>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="storageUrl">Storage URL + Bucket</Label>

@@ -15,7 +15,9 @@ import log from 'electron-log';
 import * as fs from 'fs';
 
 import MenuBuilder from './menu';
-import { resolveHtmlPath, uploadToCloudflare } from './util';
+import uploadToCloudflare from './providers/cloudflare';
+import { resolveHtmlPath } from './util';
+import { chooseProvider } from './providers/utils';
 
 class AppUpdater {
   constructor() {
@@ -183,9 +185,11 @@ ipcMain.handle(
     const data = await fs.promises.readFile(CONFIG_FILE_PATH, 'utf-8');
     const jsonData = JSON.parse(data);
     let result: string = '';
-    if (activeCloudProvider === 'cloudflare') {
-      result = await uploadToCloudflare(file, jsonData.storageUrl);
-    }
+    const cloudProviderFunction = chooseProvider(activeCloudProvider);
+    result = await cloudProviderFunction(
+      file,
+      jsonData[jsonData.activeCloudProvider].storageUrl,
+    );
     return result;
   },
 );
